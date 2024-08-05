@@ -1,51 +1,210 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Item Price Checker</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Mode Candlestick Chart</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+        }
+        #chart-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        #controls {
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background-color: #2b2b2b;
+            overflow-x: auto; /* Enable horizontal scrolling */
+        }
+        #chart {
+            flex-grow: 1;
+        }
+        input, button, .timeframe-button {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            background-color: #3b3b3b;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap; /* Prevent buttons from wrapping */
+        }
+        #coin-input {
+            width: 60px;
+        }
+        .timeframe-button.active {
+            background-color: #00bcd4;
+        }
+        .timeframe-buttons {
+            display: flex;
+            gap: 2px;
         }
     </style>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
-    <h1>Item Price Checker</h1>
-    <label for="item-name">Item Name:</label><br>
-    <input type="text" id="item-name" name="item-name" value="itm_beeswax"><br>
-    <label for="alert-price">Alert Price:</label><br>
-    <input type="number" id="alert-price" name="alert-price" value="20"><br>
-    <label for="alert-quantity">Alert Quantity:</label><br>
-    <input type="number" id="alert-quantity" name="alert-quantity" value="100"><br>
-    <button onclick="startChecking()">Start Checking</button>
-    <button onclick="stopChecking()">Stop Checking</button>
-    <div id="output"></div>
+    <div id="chart-container">
+        <div id="controls">
+            <input type="text" id="coin-input" placeholder="BTC" value="BTC">
+            <button id="update-chart">Update</button>
+            <div class="timeframe-buttons">
+                <button class="timeframe-button" data-interval="1m">1m</button>
+                <button class="timeframe-button" data-interval="3m">3m</button>
+                <button class="timeframe-button" data-interval="5m">5m</button>
+                <button class="timeframe-button" data-interval="15m">15m</button>
+                <button class="timeframe-button" data-interval="1h">1h</button>
+                <button class="timeframe-button" data-interval="4h">4h</button>
+                <button class="timeframe-button" data-interval="1d">1d</button>
+                <button class="timeframe-button" data-interval="1w">1w</button>
+            </div>
+        </div>
+        <div id="chart"></div>
+    </div>
 
     <script>
-        let intervalId;
+        const chartContainer = document.getElementById('chart');
+        const chart = LightweightCharts.createChart(chartContainer, {
+            width: chartContainer.clientWidth,
+            height: chartContainer.clientHeight,
+            layout: {
+                background: { type: 'solid', color: '#1e1e1e' },
+                textColor: '#d1d4dc',
+            },
+            grid: {
+                vertLines: { visible: false },
+                horzLines: { visible: false },
+            },
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal,
+                vertLine: {
+                    width: 1,
+                    color: 'rgba(224, 227, 235, 0.1)',
+                    style: 0,
+                },
+                horzLine: {
+                    width: 1,
+                    color: 'rgba(224, 227, 235, 0.1)',
+                    style: 0,
+                },
+            },
+            timeScale: {
+                timeVisible: true,
+                secondsVisible: false,
+                borderColor: '#2B2B43',
+            },
+            rightPriceScale: {
+                borderColor: '#2B2B43',
+            },
+        });
 
-        function checkItemPrice(itemName, alertPrice, alertQuantity) {
-            const url = `/.netlify/functions/fetch-price?itemName=${itemName}&alertPrice=${alertPrice}&alertQuantity=${alertQuantity}`;
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: '#f8f7ff',
+            downColor: '#4472ca',
+            borderUpColor: '#f8f7ff',
+            borderDownColor: '#4472ca',
+            wickUpColor: '#f8f7ff',
+            wickDownColor: '#4472ca',
+        });
 
-            fetch(url)
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById('output').innerHTML += `<p>${data}</p>`;
-                })
-                .catch(error => console.error('Error:', error));
+        let currentSymbol = getCookie('currentSymbol') || 'BTC';
+        let currentInterval = getCookie('currentInterval') || '1m';
+
+        document.getElementById('coin-input').value = currentSymbol;
+        document.querySelector(`.timeframe-button[data-interval="${currentInterval}"]`).classList.add('active');
+
+        const fetchCoinData = async (symbol = 'BTC', interval = '1m') => {
+            const limit = 1000;
+            const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${limit}`);
+            const data = await response.json();
+            return data.map(d => ({
+                time: d[0] / 1000 + 3600, // Add 1 hour (3600 seconds) to correct the time
+                open: parseFloat(d[1]),
+                high: parseFloat(d[2]),
+                low: parseFloat(d[3]),
+                close: parseFloat(d[4])
+            }));
+        };
+
+        const updateChart = async () => {
+            const coin = document.getElementById('coin-input').value.toUpperCase() || currentSymbol;
+            currentSymbol = coin;
+            const interval = document.querySelector('.timeframe-button.active').dataset.interval || currentInterval;
+            currentInterval = interval;
+            const data = await fetchCoinData(coin, interval);
+            candleSeries.setData(data);
+            
+            // Zoom in to the most recent data
+            const visibleRange = {
+                from: data[data.length - 100].time, // Show the last 100 data points
+                to: data[data.length - 1].time
+            };
+            chart.timeScale().setVisibleRange(visibleRange);
+
+            setCookie('currentSymbol', currentSymbol, 7);
+            setCookie('currentInterval', currentInterval, 7);
+        };
+
+        const refreshChart = async () => {
+            const latestData = await fetchCoinData(currentSymbol, currentInterval);
+            candleSeries.update(latestData[latestData.length - 1]);
+        };
+
+        document.getElementById('update-chart').addEventListener('click', updateChart);
+
+        document.querySelectorAll('.timeframe-button').forEach(button => {
+            button.addEventListener('click', function () {
+                document.querySelector('.timeframe-button.active').classList.remove('active');
+                this.classList.add('active');
+                updateChart();
+            });
+        });
+
+        // Resize chart when window size changes
+        window.addEventListener('resize', () => {
+            chart.applyOptions({
+                width: chartContainer.clientWidth,
+                height: chartContainer.clientHeight
+            });
+        });
+
+        updateChart(); // Initial fetch and render
+
+        // Update chart every second for real-time data
+        setInterval(refreshChart, 1000);
+
+        function setCookie(name, value, days) {
+            const d = new Date();
+            d.setTime(d.getTime() + (days*24*60*60*1000));
+            const expires = "expires="+ d.toUTCString();
+            document.cookie = name + "=" + value + ";" + expires + ";path=/";
         }
 
-        function startChecking() {
-            const itemName = document.getElementById('item-name').value;
-            const alertPrice = document.getElementById('alert-price').value;
-            const alertQuantity = document.getElementById('alert-quantity').value;
-
-            intervalId = setInterval(() => {
-                checkItemPrice(itemName, alertPrice, alertQuantity);
-            }, 5000);  // Check every 5 seconds
-        }
-
-        function stopChecking() {
-            clearInterval(intervalId);
+        function getCookie(name) {
+            const cname = name + "=";
+            const decodedCookie = decodeURIComponent(document.cookie);
+            const ca = decodedCookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(cname) == 0) {
+                    return c.substring(cname.length, c.length);
+                }
+            }
+            return "";
         }
     </script>
 </body>
