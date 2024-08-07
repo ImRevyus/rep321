@@ -30,6 +30,7 @@ const chart = LightweightCharts.createChart(chartContainer, {
     },
     rightPriceScale: {
         borderColor: '#2B2B43',
+        formatPrice: price => price.toFixed(5), // Increase precision to 5 decimal places
     },
 });
 
@@ -40,6 +41,11 @@ const candleSeries = chart.addCandlestickSeries({
     borderDownColor: '#f6465d',
     wickUpColor: '#0ecb81',
     wickDownColor: '#f6465d',
+    priceFormat: {
+        type: 'price',
+        precision: 5, // Increase precision to 5 decimal places
+        minMove: 0.00001, // Set the minimum price movement
+    },
 });
 
 function getCookie(name) {
@@ -92,6 +98,13 @@ async function updateChart() {
     if (data.length > 0) {
         document.title = `${coin} ${data[data.length - 1].close.toFixed(5)}`;
     }
+
+    // Highlight the current symbol in the coin list
+    document.querySelectorAll('.coin-item').forEach(el => el.classList.remove('selected'));
+    const selectedCoin = [...document.querySelectorAll('.coin-item')].find(el => el.textContent.includes(currentSymbol));
+    if (selectedCoin) {
+        selectedCoin.classList.add('selected');
+    }
 }
 
 async function fetchTopCoins() {
@@ -114,23 +127,37 @@ async function fetchTopCoins() {
 async function updateCoinList() {
     const coinList = document.getElementById('coin-list');
     const coins = await fetchTopCoins();
-    coinList.innerHTML = '';
+    coinList.innerHTML = `
+        <div class="coin-list-header">
+            <div class="header-pair">Pair</div>
+            <div class="header-price">Price</div>
+            <div class="header-change">Change</div>
+        </div>
+    `;
     coins.forEach(coin => {
         const priceChange = parseFloat(coin.priceChangePercent);
         const changeClass = priceChange > 0 ? 'positive' : priceChange < 0 ? 'negative' : 'neutral';
+        const [base, quote] = [coin.symbol.slice(0, -4), coin.symbol.slice(-4)];
         const item = document.createElement('div');
         item.className = 'coin-item';
         item.innerHTML = `
-            <div>${coin.symbol}</div>
+            <div class="pair">${base}<span>${quote}</span></div>
             <div class="coin-price">${parseFloat(coin.lastPrice).toFixed(5)}</div>
             <div class="coin-change ${changeClass}">${priceChange.toFixed(2)}%</div>
         `;
         item.addEventListener('click', () => {
+            document.querySelectorAll('.coin-item').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
             currentSymbol = coin.symbol;
             setCookie('symbol', currentSymbol, 7);
             updateChart();
         });
         coinList.appendChild(item);
+
+        // Highlight the current symbol
+        if (coin.symbol === currentSymbol) {
+            item.classList.add('selected');
+        }
     });
 }
 
