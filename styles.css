@@ -1,0 +1,103 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    background-color: #1e222d;
+    color: #ffffff;
+}
+#app {
+    display: flex;
+    height: 100%;
+    flex-direction: row-reverse;
+}
+#coin-list {
+    width: 300px;
+    overflow-y: auto;
+    background-color: #1e222d;
+    border-left: 1px solid #2a2e39;
+    padding: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #4b4b4b #1e222d;
+}
+#chart-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+#controls {
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background-color: #1e222d;
+    border-bottom: 1px solid #2a2e39;
+    overflow-x: auto;
+}
+#chart {
+    flex-grow: 1;
+}
+.timeframe-button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    background-color: #1e222d;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+.timeframe-button.active {
+    background-color: #4b4b4b;
+}
+.timeframe-button:hover {
+    background-color: #4b4b4b;
+    transform: scale(1.05);
+}
+.coin-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #2a2e39;
+    cursor: pointer;
+}
+.coin-item:hover {
+    background-color: #2a2e39;
+}
+.coin-price {
+    font-size: 0.9em;
+}
+.coin-change {
+    font-size: 0.8em;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.positive {
+    color: #0ecb81;
+    background-color: rgba(14, 203, 129, 0.16);
+}
+.neutral {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.16);
+}
+.negative {
+    color: #f6465d;
+    background-color: rgba(246, 70, 93, 0.16);
+}
+
+/* Custom scrollbar styling for WebKit browsers */
+#coin-list::-webkit-scrollbar {
+    width: 8px;
+}
+#coin-list::-webkit-scrollbar-track {
+    background: #1e222d;
+}
+#coin-list::-webkit-scrollbar-thumb {
+    background: #4b4b4b;
+    border-radius: 10px;
+}
+#coin-list::-webkit-scrollbar-thumb:hover {
+    background: #6c6c6c;
+}
