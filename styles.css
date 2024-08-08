@@ -27,34 +27,13 @@ body, html {
     scrollbar-color: #4b4b4b #1e222d;
 }
 
-.coin-list-header,
+/* Adjust the coin item layout */
 .coin-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 10px 12px 0; /* Consistent padding */
+    padding: 12px 10px;
     border-bottom: 1px solid #2a2e39;
-}
-
-.coin-list-header {
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 0.9em;
-    background-color: #1e222d;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.coin-list-header > div,
-.coin-item > div {
-    flex: 1;
-    text-align: center;
-}
-
-.header-pair,
-.pair {
-    flex: 1.5;
 }
 
 .pair span {
@@ -68,12 +47,12 @@ body, html {
 
 .coin-change {
     font-size: 0.9em;
-    padding: 2px 6px; /* Adjusted padding */
+    padding: 2px 6px;
     border-radius: 4px;
-    display: inline-block; /* Change to inline-block */
-    min-width: 40px; /* Set a minimum width */
-    text-align: center; /* Center the text */
-    white-space: nowrap; /* Prevent wrapping */
+    display: inline-block;
+    min-width: 40px;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .positive {
@@ -89,22 +68,6 @@ body, html {
 .negative {
     color: #f6465d;
     background-color: rgba(246, 70, 93, 0.16);
-}
-
-/* Adjust the coin item layout */
-.coin-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 10px 10px 0;
-    border-bottom: 1px solid #2a2e39;
-}
-
-
-.coin-item > div:last-child {
-    flex: 0 0 auto; /* Don't grow, don't shrink, auto basis */
-    text-align: right; /* Align to the right */
-    margin-left: 10px; /* Add some space from the price */
 }
 
 .coin-item.selected {
@@ -140,7 +103,7 @@ body, html {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    margin-left: -1px; /* Aligns the chart container to avoid visible border */
+    margin-left: -1px;
 }
 
 #controls {
