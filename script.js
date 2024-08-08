@@ -127,13 +127,7 @@ async function fetchTopCoins() {
 async function updateCoinList() {
     const coinList = document.getElementById('coin-list');
     const coins = await fetchTopCoins();
-    coinList.innerHTML = `
-        <div class="coin-list-header">
-            <div class="header-pair">Pair</div>
-            <div class="header-price">Price</div>
-            <div class="header-change">Change</div>
-        </div>
-    `;
+    coinList.innerHTML = ''; // Clear the coin list container
     coins.forEach(coin => {
         const priceChange = parseFloat(coin.priceChangePercent);
         const changeClass = priceChange > 0 ? 'positive' : priceChange < 0 ? 'negative' : 'neutral';
