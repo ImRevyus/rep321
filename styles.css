@@ -106,8 +106,32 @@ body, html {
     margin-left: -1px;
 }
 
+/* Dropdown Style */
+.timeframe-dropdown {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    background-color: #1e222d;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.timeframe-dropdown:focus {
+    outline: none;
+    background-color: #4b4b4b;
+}
+
+.timeframe-dropdown option {
+    background-color: #1e222d;
+    color: #ffffff;
+}
+
+/* Adjust the control bar height to be more compact */
 #controls {
-    padding: 5px;
+    padding: 5px 10px;
     display: flex;
     align-items: center;
     gap: 5px;
@@ -118,26 +142,4 @@ body, html {
 
 #chart {
     flex-grow: 1;
-}
-
-/* Timeframe Button Styles */
-.timeframe-button {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 5px;
-    background-color: #1e222d;
-    color: #ffffff;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-    transition: background-color 0.3s, transform 0.2s;
-}
-
-.timeframe-button.active {
-    background-color: #4b4b4b;
-}
-
-.timeframe-button:hover {
-    background-color: #4b4b4b;
-    transform: scale(1.05);
 }

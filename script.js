@@ -67,8 +67,7 @@ let currentInterval = getCookie('interval') || '1m';
 // Set the initial title
 document.title = `${currentSymbol} - Loading...`;
 
-// Add active class to the current timeframe button
-document.querySelector(`.timeframe-button[data-interval="${currentInterval}"]`).classList.add('active');
+document.getElementById('timeframe-dropdown').value = currentInterval; // Set the dropdown to the current interval
 
 async function fetchCandlestickData(symbol = 'BTCUSDT', interval = '1m') {
     const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=1000`);
@@ -166,21 +165,10 @@ function refreshChart() {
     });
 }
 
-document.querySelectorAll('.timeframe-button').forEach(button => {
-    button.addEventListener('click', function () {
-        // Remove active class from the currently active button
-        document.querySelector('.timeframe-button.active').classList.remove('active');
-        
-        // Add active class to the clicked button
-        this.classList.add('active');
-        
-        // Update the current interval and store it in a cookie
-        currentInterval = this.dataset.interval;
-        setCookie('interval', currentInterval, 7);
-        
-        // Update the chart with the new interval
-        updateChart();
-    });
+document.getElementById('timeframe-dropdown').addEventListener('change', function () {
+    currentInterval = this.value;
+    setCookie('interval', currentInterval, 7);
+    updateChart();
 });
 
 function startLiveUpdates() {

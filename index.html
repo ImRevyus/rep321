@@ -13,16 +13,16 @@
         </div>
         <div id="chart-container">
             <div id="controls">
-                <div class="timeframe-buttons">
-                    <button class="timeframe-button" data-interval="1m">1m</button>
-                    <button class="timeframe-button" data-interval="3m">3m</button>
-                    <button class="timeframe-button" data-interval="5m">5m</button>
-                    <button class="timeframe-button" data-interval="15m">15m</button>
-                    <button class="timeframe-button" data-interval="1h">1h</button>
-                    <button class="timeframe-button" data-interval="4h">4h</button>
-                    <button class="timeframe-button" data-interval="1d">1d</button>
-                    <button class="timeframe-button" data-interval="1w">1w</button>
-                </div>
+                <select id="timeframe-dropdown" class="timeframe-dropdown">
+                    <option value="1m">1m</option>
+                    <option value="3m">3m</option>
+                    <option value="5m">5m</option>
+                    <option value="15m">15m</option>
+                    <option value="1h">1h</option>
+                    <option value="4h">4h</option>
+                    <option value="1d">1d</option>
+                    <option value="1w">1w</option>
+                </select>
             </div>
             <div id="chart"></div>
         </div>
