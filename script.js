@@ -4,7 +4,7 @@ const chart = LightweightCharts.createChart(chartContainer, {
     width: chartContainer.clientWidth,
     height: chartContainer.clientHeight,
     layout: {
-        background: { color: '#1e222d' }, // default to midnight theme
+        background: { color: '#1e222d' },
         textColor: '#d1d4dc',
     },
     grid: {
@@ -95,22 +95,42 @@ async function updateChart() {
     }
 }
 
-// Fetch top coins data
-async function fetchTopCoins() {
-    return fetch('https://api.binance.com/api/v3/ticker/24hr')
-        .then(response => response.json())
-        .then(data => {
-            const currentTime = Date.now();
-            const oneDayInMs = 24 * 60 * 60 * 1000;
-            const minVolume = 10000;
+// Caching mechanism for top coins data
+let cachedTopCoinsData = null;
+let lastTopCoinsFetchTime = 0;
+const CACHE_DURATION = 1000; // 1 second in milliseconds
 
-            return data
-                .filter(coin => coin.symbol.endsWith('USDT') &&
-                                parseFloat(coin.quoteVolume) > minVolume &&
-                                parseFloat(coin.lastPrice) > 0 &&
-                                (currentTime - coin.closeTime) < oneDayInMs)
-                .sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent));
-        });
+// Fetch top coins data with caching
+async function fetchTopCoins() {
+    const currentTime = Date.now();
+    
+    if (cachedTopCoinsData && (currentTime - lastTopCoinsFetchTime < CACHE_DURATION)) {
+        return cachedTopCoinsData;
+    }
+
+    try {
+        const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+        const data = await response.json();
+        
+        const currentTime = Date.now();
+        const oneDayInMs = 24 * 60 * 60 * 1000;
+        const minVolume = 10000;
+
+        const processedData = data
+            .filter(coin => coin.symbol.endsWith('USDT') &&
+                            parseFloat(coin.quoteVolume) > minVolume &&
+                            parseFloat(coin.lastPrice) > 0 &&
+                            (currentTime - coin.closeTime) < oneDayInMs)
+            .sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent));
+
+        cachedTopCoinsData = processedData;
+        lastTopCoinsFetchTime = currentTime;
+        
+        return processedData;
+    } catch (error) {
+        console.error('Error fetching data from Binance:', error);
+        return cachedTopCoinsData || [];
+    }
 }
 
 // Update coin list and synchronize the selected coin with the chart
@@ -220,11 +240,12 @@ async function initialize() {
     startLiveUpdates();
 }
 
-initialize();
-
 // Live updates in sync for coin list, chart, and tab title
 function startLiveUpdates() {
     setInterval(async () => {
         await Promise.all([refreshChart(), updateCoinList()]);
     }, 1000); // Update everything every second
 }
+
+// Start the application
+initialize();
