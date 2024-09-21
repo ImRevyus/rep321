@@ -4,7 +4,7 @@ const chart = LightweightCharts.createChart(chartContainer, {
     width: chartContainer.clientWidth,
     height: chartContainer.clientHeight,
     layout: {
-        background: { color: '#1e222d' },
+        background: { color: '#1e222d' }, // default to midnight theme
         textColor: '#d1d4dc',
     },
     grid: {
@@ -72,87 +72,17 @@ let currentTheme = getCookie('theme') || 'midnight';
 document.getElementById('timeframe-dropdown').value = currentInterval;
 document.getElementById('theme-dropdown').value = currentTheme;
 
-// Caching mechanism for all API calls
-const cache = {
-    topCoins: { data: null, timestamp: 0 },
-    candlestick: {}
-};
-
-const CACHE_DURATION = 2000; // 2 seconds
-const API_CALL_BUFFER = 100; // 100ms buffer to prevent exact 1-second calls
-let lastTopCoinsFetchTime = 0;
-let lastCandlestickFetchTime = 0;
-
-// Helper function to add small jitter to intervals
-function addJitter(interval, factor = 0.1) {
-    return interval + (Math.random() - 0.5) * interval * factor;
-}
-
-// Fetch top coins data with improved caching
-async function fetchTopCoins() {
-    const currentTime = Date.now();
-    
-    if (cache.topCoins.data && (currentTime - cache.topCoins.timestamp < CACHE_DURATION)) {
-        return cache.topCoins.data;
-    }
-
-    if (currentTime - lastTopCoinsFetchTime < 1000 + API_CALL_BUFFER) {
-        await new Promise(resolve => setTimeout(resolve, addJitter(1000 + API_CALL_BUFFER - (currentTime - lastTopCoinsFetchTime))));
-    }
-
-    try {
-        const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
-        const data = await response.json();
-        
-        const processedData = data
-            .filter(coin => coin.symbol.endsWith('USDT') &&
-                            parseFloat(coin.quoteVolume) > 10000 &&
-                            parseFloat(coin.lastPrice) > 0 &&
-                            (currentTime - coin.closeTime) < 24 * 60 * 60 * 1000)
-            .sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent));
-
-        cache.topCoins = { data: processedData, timestamp: currentTime };
-        lastTopCoinsFetchTime = currentTime;
-        
-        return processedData;
-    } catch (error) {
-        console.error('Error fetching data from Binance:', error);
-        return cache.topCoins.data || [];
-    }
-}
-
-// Fetch candlestick data with caching
+// Fetch candlestick data
 async function fetchCandlestickData(symbol = 'BTCUSDT', interval = '1m') {
-    const cacheKey = `${symbol}-${interval}`;
-    const currentTime = Date.now();
-    
-    if (cache.candlestick[cacheKey] && (currentTime - cache.candlestick[cacheKey].timestamp < CACHE_DURATION)) {
-        return cache.candlestick[cacheKey].data;
-    }
-
-    if (currentTime - lastCandlestickFetchTime < 1000 + API_CALL_BUFFER) {
-        await new Promise(resolve => setTimeout(resolve, addJitter(1000 + API_CALL_BUFFER - (currentTime - lastCandlestickFetchTime))));
-    }
-
-    try {
-        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=1000`);
-        const data = await response.json();
-        const processedData = data.map(d => ({
-            time: d[0] / 1000 + 3600,
-            open: parseFloat(d[1]),
-            high: parseFloat(d[2]),
-            low: parseFloat(d[3]),
-            close: parseFloat(d[4])
-        }));
-
-        cache.candlestick[cacheKey] = { data: processedData, timestamp: currentTime };
-        lastCandlestickFetchTime = currentTime;
-
-        return processedData;
-    } catch (error) {
-        console.error('Error fetching candlestick data:', error);
-        return cache.candlestick[cacheKey]?.data || [];
-    }
+    const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=1000`);
+    const data = await response.json();
+    return data.map(d => ({
+        time: d[0] / 1000 + 3600,
+        open: parseFloat(d[1]),
+        high: parseFloat(d[2]),
+        low: parseFloat(d[3]),
+        close: parseFloat(d[4])
+    }));
 }
 
 // Update chart with new data and update the tab title
@@ -163,6 +93,24 @@ async function updateChart() {
     if (data.length > 0) {
         document.title = `${currentSymbol} ${data[data.length - 1].close.toFixed(5)}`;
     }
+}
+
+// Fetch top coins data
+async function fetchTopCoins() {
+    return fetch('https://api.binance.com/api/v3/ticker/24hr')
+        .then(response => response.json())
+        .then(data => {
+            const currentTime = Date.now();
+            const oneDayInMs = 24 * 60 * 60 * 1000;
+            const minVolume = 10000;
+
+            return data
+                .filter(coin => coin.symbol.endsWith('USDT') &&
+                                parseFloat(coin.quoteVolume) > minVolume &&
+                                parseFloat(coin.lastPrice) > 0 &&
+                                (currentTime - coin.closeTime) < oneDayInMs)
+                .sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent));
+        });
 }
 
 // Update coin list and synchronize the selected coin with the chart
@@ -197,12 +145,13 @@ async function updateCoinList() {
 }
 
 // Refresh chart with the latest data (single candle update)
-async function refreshChart() {
-    const data = await fetchCandlestickData(currentSymbol, currentInterval);
-    if (data.length > 0) {
+function refreshChart() {
+    fetchCandlestickData(currentSymbol, currentInterval).then(data => {
         candleSeries.update(data[data.length - 1]);
-        document.title = `${currentSymbol} ${data[data.length - 1].close.toFixed(5)}`;
-    }
+        if (data.length > 0) {
+            document.title = `${currentSymbol} ${data[data.length - 1].close.toFixed(5)}`;
+        }
+    });
 }
 
 // Handle timeframe changes
@@ -271,12 +220,11 @@ async function initialize() {
     startLiveUpdates();
 }
 
+initialize();
+
 // Live updates in sync for coin list, chart, and tab title
 function startLiveUpdates() {
     setInterval(async () => {
         await Promise.all([refreshChart(), updateCoinList()]);
     }, 1000); // Update everything every second
 }
-
-// Start the application
-initialize();
